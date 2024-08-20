@@ -1,3 +1,5 @@
 credentials.json
 __pycache__/
 *.db
+examples.txt
+test.ipynb

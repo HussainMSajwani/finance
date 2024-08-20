@@ -1,6 +1,7 @@
 import json
 import imaplib
 import email
+from email.parser import BytesParser
 
 def parse_transaction(email_message):
     pass
@@ -21,24 +22,62 @@ class Mail:
             print(f"An error occurred: {e}")
             print("Check Credentials")
 
+        self.parser = BytesParser()
+
+    def parse_msg_data(self, msg_data):
+        email_data = msg_data[0][1]
+        email_message = self.parser.parsebytes(email_data)
+        
+        subject = email_message['Subject']
+        content = email_message.get_payload()
+        date = email.utils.parsedate(email_message['Date'])
+        return subject, content, date
+
+
     def get_all_emails(self):
         status, messages = self.mail.search(None, '(ALL)')
         mail_ids = messages[0].split()
-
-
-        parser = email.parser.BytesParser()
-
+        out = []
         if mail_ids:
             for num in mail_ids:
                 status, msg_data = self.mail.fetch(num, '(RFC822)')
-                email_data = msg_data[0][1]
-                email_message = parser.parsebytes(email_data)
-                if self.username in email_message['From']:
-                    print(email_message['Subject'])
-                    print(email_message.get_payload())
-                    print(email.utils.parsedate(email_message['Date']))
-                    print()
+                subject, content, date = self.parse_msg_data(msg_data)
+                out.append((subject, content, date))
+                #printtent)
+
+        return out  
+
+
+    def get_unseen_emails(self):
+        status, messages = self.mail.search(None, '(UNSEEN)')
+        mail_ids = messages[0].split()
+        out = []
+        if mail_ids:
+            for num in mail_ids:
+                status, msg_data = self.mail.fetch(num, '(RFC822)')
+                subject, content, date = self.parse_msg_data(msg_data)
+                out.append((subject, content, date))
+                #printtent)
         else:
-            print("No new emails")     
+            print("No new emails")
+        return out
+
+
+    def get_last_n_emails(self, n):
+        status, messages = self.mail.search(None, '(ALL)')
+        mail_ids = messages[0].split()
+        
+        out = []
+        if mail_ids:
+            for num in mail_ids[-n:]:
+                status, msg_data = self.mail.fetch(num, '(RFC822)')
+                subject, content, date = self.parse_msg_data(msg_data)
+                out.append((subject, content, date))
+                #printtent)
+        
+        return out
+
+    def __del__(self):
+        self.mail.logout() 
 
         
